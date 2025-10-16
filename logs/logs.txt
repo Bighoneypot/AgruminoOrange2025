@@ -1,0 +1,22 @@
+
+
+
+Fixed
+Removed magic numbers within code and libraries.
+Fixed the problem of CP viewing on large screens and various improvements
+
+Adding:
+Extra info for support service in serial print.
+Dynamic json support info and print it in serial monitor
+Const string in String getDeviceKey
+Create a supportss.h and supportss.cpp for dynamic support information and secrtets info(token ecc ecc)
+and firmware setup ( device token, release info, email and many more.. )
+Customer Care Button to request Support from captive portal with a pre-populate support mail.
+Red color for reset Button
+Link for official support page
+Custom style and color design
+Adjust button an correct align for display.
+Create custom PROGMEM HEADER: START, END, STYLE, LOGO
+Script.py to rename automatically .bin with a FW version after build
+Free up space
+Various
