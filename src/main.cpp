@@ -149,19 +149,34 @@ void enterTimedConfigPortal(WiFiManagerWithAPI &wifiManager, uint16_t seconds) {
 
 void setup() {
   Serial.begin(115200);
-  delay(200);
-  agrumino.setup();
-  printSupport();
+  delay(800);                  // stabilizza la COM dopo il flash
+  agrumino.setup();            // genera FULLNAME
+  delay(300);
+  Serial.println();
+  Serial.println("FULLNAME_TAG:" + FULLNAME);
+  Serial.flush();              // forza l'invio del buffer
+  delay(2000);                             // forza l’invio immediato sulla seriale
 
-  agrumino.turnLedOff();
-  delay(300); 
+  // -----------------------------
+  // Informazioni di supporto e Wi-Fi setup
+  // -----------------------------
+  printSupport();   // mostra il banner e i dati di supporto (già presente nel tuo codice)
 
+  agrumino.turnLedOff();   // disattiva LED iniziale
+  delay(300);
+
+  // -----------------------------
+  // WiFi Manager & Portal logic
+  // -----------------------------
   WiFiManagerWithAPI wifiManager;
   bool hasWifiCredentials = WiFi.SSID().length() > 0;
   bool configPortalRequest = false;
   bool factoryResetRequest = false;
   unsigned long pressStart = 0;
 
+  // -----------------------------
+  // Rilevamento pulsante all'avvio
+  // -----------------------------
   bool buttonInitiallyPressed = agrumino.isButtonPressed();
   if (buttonInitiallyPressed) {
     Serial.println("Button detected pressed at boot - detecting hold time");
@@ -174,7 +189,9 @@ void setup() {
       int seconds = held / 1000;
 
       if (seconds != lastSecond) {
-        Serial.print("Hold time: "); Serial.print(seconds); Serial.println("s");
+        Serial.print("Hold time: ");
+        Serial.print(seconds);
+        Serial.println("s");
         lastSecond = seconds;
       }
 
@@ -202,7 +219,9 @@ void setup() {
     Serial.println("No button pressed at boot");
   }
 
-
+  // -----------------------------
+  // Factory Reset (20+ s)
+  // -----------------------------
   if (factoryResetRequest) {
     Serial.println("Executing factory reset - clearing WiFi and settings");
     wifiManager.resetSettings();
@@ -211,6 +230,9 @@ void setup() {
     return;
   }
 
+  // -----------------------------
+  // Config Portal Request (5–20 s)
+  // -----------------------------
   if (configPortalRequest) {
     Serial.println("Config portal requested - starting AP mode");
     agrumino.turnLedOn();
@@ -218,41 +240,54 @@ void setup() {
     return;
   }
 
+  // -----------------------------
+  // Avvio normale (nessun pulsante premuto)
+  // -----------------------------
   if (!hasWifiCredentials) {
     Serial.println("No WiFi credentials found - opening timed Config Portal");
     enterTimedConfigPortal(wifiManager, CP_TIMEOUT_SECONDS);
     return;
   }
 
-
+  // -----------------------------
+  // Tentativi connessione Wi-Fi
+  // -----------------------------
   const int maxAttempts = 3;
   bool connected = false;
 
   for (int attempt = 1; attempt <= maxAttempts && !connected; attempt++) {
     Serial.print("Connecting to saved WiFi (attempt ");
-    Serial.print(attempt); Serial.println(" of 3)");
+    Serial.print(attempt);
+    Serial.println(" of 3)");
     WiFi.mode(WIFI_STA);
     WiFi.begin();
 
     unsigned long startAttemptTime = millis();
     const unsigned long wifiTimeout = 15000;
+
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < wifiTimeout) {
       Serial.print(".");
       delay(500);
       yield();
     }
+
     if (WiFi.status() == WL_CONNECTED) connected = true;
     else Serial.println("\nConnection failed");
   }
 
+  // -----------------------------
+  // Fallback Captive Portal o avvio normale
+  // -----------------------------
   if (!connected) {
     Serial.println("WiFi connection failed after 3 attempts - opening timed Config Portal");
     enterTimedConfigPortal(wifiManager, CP_TIMEOUT_SECONDS);
     return;
   }
 
-  Serial.print("Connected to WiFi. IP: "); Serial.println(WiFi.localIP());
+  Serial.print("Connected to WiFi. IP: ");
+  Serial.println(WiFi.localIP());
 }
+
 
 
 void sendData(String deviceKey, String deviceToken, float temp, int soil,
